@@ -302,17 +302,40 @@ public class MyPatches
         {
             if (entry.Amount <= 0) continue;
             ShelfCompartment wareComp = ShelfManager.Instance.m_WarehouseShelfList[entry.ShelfIndex].GetStorageCompartmentList()[entry.CompartmentIndex].GetShelfCompartment();
+            if (!wareComp)
+            {
+                Plugin.LogDebugMessage("Warehouse comp null");
+                break;
+            }
             Plugin.LogDebugMessage("Warehouse Shelf: " + entry.ShelfIndex + " compartment: " + entry.CompartmentIndex);
             while (shelfCompartment.HasEnoughSlot())
             {
-                if (wareComp.GetItemCount() <= 0)break;
+                Plugin.LogDebugMessage("Shelf has available slot");
+                if (wareComp.GetItemCount() <= 0)
+                {
+                    Plugin.LogDebugMessage("Warehouse comp empty");
+                    break;
+                }
                 InteractablePackagingBox_Item box = wareComp.GetLastInteractablePackagingBox();
-                if (box is null) break;
-                SpawnItemOnShelf(toFillType, shelfCompartment);
+                if (!box)
+                {
+                    Plugin.LogDebugMessage("Box is null");
+                    break;
+                }
+                Plugin.LogDebugMessage("Box found");
+                bool spawned = SpawnItemOnShelf(toFillType, shelfCompartment, box.m_ItemCompartment.GetFirstItem());
+                if (!spawned)
+                {
+                    Plugin.LogDebugMessage($"Failed to spawn {toFillType} on shelf");
+                    break;
+                }
+                Plugin.LogDebugMessage($"Spawned {toFillType} on shelf");
                 RemoveItemFromBox(box, wareComp);
+                Plugin.LogDebugMessage($"Removed {toFillType} from box");
                 if (box.m_ItemCompartment.GetItemCount() == 0)
                 {
                     CleanupBox(box, wareComp);
+                    Plugin.LogDebugMessage("Box cleaned up");
                 }
             }
             wareComp.SetPriceTagItemAmountText();
@@ -406,16 +429,69 @@ public class MyPatches
         }
     }*/
 
-    public static void SpawnItemOnShelf(EItemType toFillType, ShelfCompartment shelfCompartment)
+    public static bool SpawnItemOnShelf_OLD(EItemType toFillType, ShelfCompartment shelfCompartment)
     {
+        if (toFillType == EItemType.None)
+        {
+            Plugin.LogDebugMessage("Item type is None");
+            return false;
+        }
+
+        if (!shelfCompartment)
+        {
+            Plugin.LogDebugMessage("Shelf compartment is null");
+            return false;
+        }
         ItemMeshData itemMeshData = InventoryBase.GetItemMeshData(toFillType);
+        Plugin.LogDebugMessage($"Got {toFillType} item mesh data");
         Item item = ItemSpawnManager.GetItem(shelfCompartment.m_StoredItemListGrp);
-        item.SetMesh(itemMeshData.mesh, itemMeshData.material, toFillType, itemMeshData.meshSecondary, itemMeshData.materialSecondary);
+        Plugin.LogDebugMessage($"Spawned {toFillType} item");
+        item.SetMesh(itemMeshData.mesh, itemMeshData.material, toFillType, itemMeshData.meshSecondary, itemMeshData.materialSecondary, itemMeshData.materialList);
+        Plugin.LogDebugMessage($"Set {toFillType} mesh");
         item.transform.position = shelfCompartment.GetEmptySlotTransform().position;
+        Plugin.LogDebugMessage($"Set {toFillType} position");
         item.transform.localScale = shelfCompartment.GetEmptySlotTransform().localScale;
+        Plugin.LogDebugMessage($"Set {toFillType} scale");
         item.transform.rotation = shelfCompartment.m_StartLoc.rotation;
+        Plugin.LogDebugMessage($"Set {toFillType} rotation");
         item.gameObject.SetActive(true);
+        Plugin.LogDebugMessage($"Set {toFillType} active");
         shelfCompartment.AddItem(item, false);
+        Plugin.LogDebugMessage($"Added {toFillType} to shelf");
+        return true;
+    }
+    
+    public static bool SpawnItemOnShelf(EItemType toFillType, ShelfCompartment shelfCompartment, Item itemData)
+    {
+        if (toFillType == EItemType.None)
+        {
+            Plugin.LogDebugMessage("Item type is None");
+            return false;
+        }
+
+        if (!shelfCompartment)
+        {
+            Plugin.LogDebugMessage("Shelf compartment is null");
+            return false;
+        }
+        //ItemMeshData itemMeshData = InventoryBase.GetItemMeshData(toFillType);
+        //Plugin.LogDebugMessage($"Got {toFillType} item mesh data");
+        Item item = ItemSpawnManager.GetItem(shelfCompartment.m_StoredItemListGrp);
+        Plugin.LogDebugMessage($"Spawned {toFillType} item");
+        item.SetMesh(itemData.m_MeshFilter.mesh, itemData.m_Mesh.material, toFillType, 
+            itemData.m_MeshFilterSecondary.mesh, itemData.m_MeshSecondary.material, itemData.m_Mesh.materials.ToList());
+        Plugin.LogDebugMessage($"Set {toFillType} mesh");
+        item.transform.position = shelfCompartment.GetEmptySlotTransform().position;
+        Plugin.LogDebugMessage($"Set {toFillType} position");
+        item.transform.localScale = shelfCompartment.GetEmptySlotTransform().localScale;
+        Plugin.LogDebugMessage($"Set {toFillType} scale");
+        item.transform.rotation = shelfCompartment.m_StartLoc.rotation;
+        Plugin.LogDebugMessage($"Set {toFillType} rotation");
+        item.gameObject.SetActive(true);
+        Plugin.LogDebugMessage($"Set {toFillType} active");
+        shelfCompartment.AddItem(item, false);
+        Plugin.LogDebugMessage($"Added {toFillType} to shelf");
+        return true;
     }
 
     public static void RemoveItemFromBox(InteractablePackagingBox_Item box, ShelfCompartment wareComp)
@@ -552,9 +628,9 @@ public class MyPatches
         }
     }
     
-    [HarmonyPatch(typeof(CGameManager), "Update")]
-    [HarmonyPrefix]
-    public static void GameManagerUpdatePrefix()
+    /*[HarmonyPatch(typeof(CGameManager), "Update")]
+    [HarmonyPrefix]*/
+    public static void CheckForInput()
     {
         if (Plugin.FillCardTableKey.Value.IsDown() && !_isRunning && Plugin.PluginEnabled.Value)
         {
