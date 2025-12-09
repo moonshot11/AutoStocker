@@ -13,8 +13,8 @@ public class MyPatches
     //private static readonly List<int> SortedIndexList = new List<int>();
     //private static readonly List<float> SortedPriceList = new List<float>();
     private static bool _isRunning;
-    private static readonly Dictionary<EItemType, WarehouseEntryList> WarehouseCache = new Dictionary<EItemType, WarehouseEntryList>();
-    private static readonly List<CardEntry> SortedCards = new List<CardEntry>();
+    private static readonly Dictionary<EItemType, WarehouseEntryList> WarehouseCache = [];
+    private static readonly List<CardEntry> SortedCards = [];
     
     public static void FillCardShelves()
     {
@@ -62,8 +62,7 @@ public class MyPatches
                 Plugin.LogDebugMessage("No more available cards");
                 return EFillResult.NoCards;
             }
-
-            int index = Plugin.RandomCardFill.Value ? Random.RandomRangeInt(0, SortedCards.Count - 1) : 0;
+            int index = Plugin.RandomCardFill.Value ? Random.Range(0, SortedCards.Count) : 0;
             CardEntry entry = SortedCards[index];
             Plugin.LogDebugMessage("Filling card slot with card " + entry);
             InteractableCard3d card3d = CreateInteractableCard3d(ref entry);
@@ -94,81 +93,6 @@ public class MyPatches
             return EFillResult.Full;
         }
     }
-
-    /*
-    private static void SortAlbumByPrice(ECardExpansionType expansionType)
-    {
-        Plugin.LogDebugMessage("Started sorting.");
-        SortedIndexList.Clear();
-        SortedPriceList.Clear();
-        int num = 0;
-        int num2 = 0;
-        int num3 = 0;
-        SortCardsByPrice(expansionType,ref num,false, ref num3);
-        if (expansionType == ECardExpansionType.Ghost)
-        {
-            SortCardsByPrice(expansionType,ref num2,true, ref num3);
-        }
-        Plugin.LogDebugMessage("Sorted " + num3 + " cards.");
-    }
-
-    private static void SortCardsByPrice(ECardExpansionType expansionType, ref int saveIndex, bool isDestiny, ref int totalCount)
-    {
-        for (int i = 0; i < InventoryBase.GetShownMonsterList(expansionType).Count; i++)
-        {
-            Plugin.LogDebugMessage("Sorting monster list " + i);
-            Plugin.LogDebugMessage("Cards for this monster: " + CPlayerData.GetCardAmountPerMonsterType(expansionType));
-            for (int j = 0; j < CPlayerData.GetCardAmountPerMonsterType(expansionType); j++)
-            {
-                Plugin.LogDebugMessage("Checking card id " + saveIndex);
-                CardData cardData = new CardData();
-                cardData.monsterType = CPlayerData.GetMonsterTypeFromCardSaveIndex(saveIndex, expansionType);
-                cardData.borderType = (ECardBorderType)(saveIndex % CPlayerData.GetCardAmountPerMonsterType(expansionType, false));
-                cardData.isFoil = saveIndex % CPlayerData.GetCardAmountPerMonsterType(expansionType) >= CPlayerData.GetCardAmountPerMonsterType(expansionType, false);
-                cardData.isDestiny = isDestiny;
-                cardData.expansionType = expansionType;
-                int cardAmount = CPlayerData.GetCardAmount(cardData);
-                if (cardAmount <= Plugin.AmountToHold.Value)
-                {
-                    Plugin.LogDebugMessage("Not enough duplicates");
-                    saveIndex++;
-                    totalCount++;
-                    continue;
-                }
-                float num2 = 0;
-                if (cardAmount > 0)
-                {
-                    num2 = CPlayerData.GetCardMarketPrice(cardData);
-                }
-                if ((num2 > Plugin.MaxCardValue.Value) || (num2 < Plugin.MinCardValue.Value))
-                {
-                    Plugin.LogDebugMessage("Card price not within range");
-                    Plugin.LogDebugMessage("Price: " + num2);
-                    Plugin.LogDebugMessage("Max: " + Plugin.MaxCardValue.Value);
-                    Plugin.LogDebugMessage("Min: " + Plugin.MinCardValue.Value);
-                    saveIndex++;
-                    totalCount++;
-                    continue;
-                }
-                int num3 = SortedPriceList.Count;
-                for (int k = 0; k < SortedPriceList.Count; k++)
-                {
-                    if (num2 > SortedPriceList[k])
-                    {
-                        num3 = k;
-                        break;
-                    }
-                }
-                for (int l = 0; l < cardAmount - Plugin.AmountToHold.Value; l++)
-                {
-                    SortedPriceList.Insert(num3, num2);
-                    SortedIndexList.Insert(num3, totalCount);
-                }
-                saveIndex++;
-                totalCount++;
-            }
-        }
-    }*/
 
     private static InteractableCard3d CreateInteractableCard3d(ref CardEntry entry)
     {
@@ -209,7 +133,7 @@ public class MyPatches
                 {
                     count += box.m_ItemCompartment.GetItemCount();
                 }
-                WarehouseEntry entry = new WarehouseEntry(i, j, count);
+                WarehouseEntry entry = new(i, j, count);
                 if (WarehouseCache.ContainsKey(type))
                 {
                     WarehouseCache[type].ContainsEntry(entry.ShelfIndex, entry.CompartmentIndex);
@@ -217,7 +141,7 @@ public class MyPatches
                 }
                 else
                 {
-                    WarehouseEntryList list = new WarehouseEntryList();
+                    WarehouseEntryList list = new();
                     list.AddEntry(entry);
                     WarehouseCache.Add(type, list);
                 }
@@ -343,124 +267,7 @@ public class MyPatches
         }
         Plugin.LogDebugMessage("All warehouse shelves empty or shelf full");
     }
-/*
-    private static void FillItemShelfOld(ShelfCompartment shelfCompartment)
-    {
-        EItemType toFillType = shelfCompartment.GetItemType();
-        if (WarehouseCache.ContainsKey(toFillType))
-        {
-            Plugin.LogDebugMessage("Found item " + toFillType.ToString());
-            int toFillAmount = shelfCompartment.GetMaxItemCount() - shelfCompartment.GetItemCount();
-            WarehouseEntryList list = WarehouseCache.GetValueSafe(toFillType);
-            foreach (WarehouseEntry entry in list.Entries)
-            {
-                if (entry.Amount == 0)
-                {
-                    Plugin.LogDebugMessage("Shelf empty");
-                    continue;
-                }
-                ShelfCompartment wareComp =
-                    ShelfManager.Instance.m_WarehouseShelfList[entry.ShelfIndex].GetStorageCompartmentList()[entry.CompartmentIndex].GetShelfCompartment();
-                if (entry.Amount <= toFillAmount)
-                {
-                    for (int a = 0; a < entry.Amount; a++)
-                    {
-                        SpawnItemOnShelf(toFillType, shelfCompartment);
-                        entry.ReduceAmount(1);
-                    }
-                    toFillAmount = 0;
-                    Plugin.LogDebugMessage("Added " + entry.Amount + " items");
-                    while (wareComp.GetInteractablePackagingBoxList().Count >0)
-                    {
-                        InteractablePackagingBox_Item box = wareComp.GetLastInteractablePackagingBox();
-                        CleanupBox(box, wareComp);
-                    }
-                    Plugin.LogDebugMessage("Deleted empty boxes");
-                }
-                else
-                {
-                    List<InteractablePackagingBox_Item> toDelete = new List<InteractablePackagingBox_Item>();
-                    for (int b = wareComp.GetInteractablePackagingBoxList().Count - 1; b >= 0; b--)
-                    {
-                        InteractablePackagingBox_Item box = wareComp.GetInteractablePackagingBoxList()[b];
-                        if (toFillAmount <= 0) break;
-                        int inBox = box.m_ItemCompartment.GetItemCount();
-                        if (inBox <= toFillAmount)
-                        {
-                            for (int a = 0; a < inBox; a++)
-                            {
-                                SpawnItemOnShelf(toFillType, shelfCompartment);
-                                entry.ReduceAmount(1);
-                            }
-                            Plugin.LogDebugMessage("Filled compartment with " + inBox + " items");
-                            toDelete.Add(box);
-                            if (inBox == toFillAmount)
-                            {
-                                toFillAmount = 0;
-                                break;
-                            }
-                            Plugin.LogDebugMessage("To fill amount before partial box: " + toFillAmount);
-                            toFillAmount -= inBox;
-                            Plugin.LogDebugMessage("To fill amount after partial box: " + toFillAmount);
-                        }
-                        else
-                        {
-                            Plugin.LogDebugMessage("To fill amount before half box: " + toFillAmount);
-                            for (int a = 0; a < toFillAmount; a++)
-                            {
-                                SpawnItemOnShelf(toFillType, shelfCompartment);
-                                entry.ReduceAmount(1);
-                                RemoveItemFromBox(box, wareComp);
-                            }
-                            Plugin.LogDebugMessage("Filled compartment with " + toFillAmount + " items and removed from box");
-                            toFillAmount = 0;
-                        }
-                    }
-                    foreach (InteractablePackagingBox_Item box in toDelete)
-                    {
-                        CleanupBox(box, wareComp);
-                    }
-                }
-            }
-        }
-        else
-        {
-            Plugin.LogDebugMessage("Item not found in warehouse");
-        }
-    }*/
 
-    public static bool SpawnItemOnShelf_OLD(EItemType toFillType, ShelfCompartment shelfCompartment)
-    {
-        if (toFillType == EItemType.None)
-        {
-            Plugin.LogDebugMessage("Item type is None");
-            return false;
-        }
-
-        if (!shelfCompartment)
-        {
-            Plugin.LogDebugMessage("Shelf compartment is null");
-            return false;
-        }
-        ItemMeshData itemMeshData = InventoryBase.GetItemMeshData(toFillType);
-        Plugin.LogDebugMessage($"Got {toFillType} item mesh data");
-        Item item = ItemSpawnManager.GetItem(shelfCompartment.m_StoredItemListGrp);
-        Plugin.LogDebugMessage($"Spawned {toFillType} item");
-        item.SetMesh(itemMeshData.mesh, itemMeshData.material, toFillType, itemMeshData.meshSecondary, itemMeshData.materialSecondary, itemMeshData.materialList);
-        Plugin.LogDebugMessage($"Set {toFillType} mesh");
-        item.transform.position = shelfCompartment.GetEmptySlotTransform().position;
-        Plugin.LogDebugMessage($"Set {toFillType} position");
-        item.transform.localScale = shelfCompartment.GetEmptySlotTransform().localScale;
-        Plugin.LogDebugMessage($"Set {toFillType} scale");
-        item.transform.rotation = shelfCompartment.m_StartLoc.rotation;
-        Plugin.LogDebugMessage($"Set {toFillType} rotation");
-        item.gameObject.SetActive(true);
-        Plugin.LogDebugMessage($"Set {toFillType} active");
-        shelfCompartment.AddItem(item, false);
-        Plugin.LogDebugMessage($"Added {toFillType} to shelf");
-        return true;
-    }
-    
     public static bool SpawnItemOnShelf(EItemType toFillType, ShelfCompartment shelfCompartment, Item itemData)
     {
         if (toFillType == EItemType.None)
@@ -499,10 +306,7 @@ public class MyPatches
         Item firstItem = box.m_ItemCompartment.GetFirstItem();
         firstItem.DisableItem();
         box.m_ItemCompartment.RemoveItem(firstItem);
-        if (wareComp is not null)
-        {
-            wareComp.SetPriceTagItemAmountText();
-        }
+        wareComp?.SetPriceTagItemAmountText();
     }
 
     public static void CleanupBox(InteractablePackagingBox_Item box, ShelfCompartment comp)
@@ -531,15 +335,22 @@ public class MyPatches
 
     public static bool MoveFloorBoxToWarehouse(InteractablePackagingBox_Item box)
     {
-        if(box.m_IsStored || box.IsBoxOpened() || box.GetItemType() == EItemType.None || !box.m_Collider.enabled || box.m_ItemCompartment.GetItemCount() <= 0) return false;
-        if (!WarehouseCache.ContainsKey(box.GetItemType())) return false;
+        if (box.m_IsStored || box.IsBoxOpened() || box.GetItemType() == EItemType.None ||
+            !box.m_Collider.enabled || box.m_ItemCompartment.GetItemCount() <= 0 ||
+            !WarehouseCache.ContainsKey(box.GetItemType()))
+            return false;
+
         WarehouseEntryList list = WarehouseCache.GetValueSafe(box.GetItemType());
+
         foreach (WarehouseEntry entry in list.Entries)
         {
-            ShelfCompartment wareComp = ShelfManager.Instance.m_WarehouseShelfList[entry.ShelfIndex].GetStorageCompartmentList()[entry.CompartmentIndex].GetShelfCompartment();
-            if (wareComp.GetInteractablePackagingBoxList().Count > 0)
+            List<InteractableStorageCompartment> compList = ShelfManager.Instance.m_WarehouseShelfList[entry.ShelfIndex].GetStorageCompartmentList();
+            ShelfCompartment wareComp = compList[entry.CompartmentIndex].GetShelfCompartment();
+
+            if (wareComp.GetInteractablePackagingBoxList().Count > 0 &&
+                (wareComp.GetLastInteractablePackagingBox().m_IsBigBox != box.m_IsBigBox || !wareComp.HasEnoughSlot()) )
             {
-                if (wareComp.GetLastInteractablePackagingBox().m_IsBigBox != box.m_IsBigBox || !wareComp.HasEnoughSlot())continue;
+                continue;
             }
             box.SetPhysicsEnabled(false);
             box.transform.position = wareComp.GetEmptySlotTransform().position;
@@ -552,7 +363,7 @@ public class MyPatches
     public static List<CardEntry> SortCards()
     {
         SortedCards.Clear();
-        List<ECardExpansionType> toSearch = new List<ECardExpansionType>();
+        List<ECardExpansionType> toSearch = [];
         if (Plugin.EnableMultiExpansion.Value)
         {
             foreach (ECardExpansionType type in Plugin.EnabledExpansions.Keys)
@@ -581,12 +392,14 @@ public class MyPatches
             for (int j = 0; j < CPlayerData.GetCardAmountPerMonsterType(expansionType); j++)
             {
                 Plugin.LogDebugMessage("Checking card id " + saveIndex);
-                CardData cardData = new CardData();
-                cardData.monsterType = CPlayerData.GetMonsterTypeFromCardSaveIndex(saveIndex, expansionType);
-                cardData.borderType = (ECardBorderType)(saveIndex % CPlayerData.GetCardAmountPerMonsterType(expansionType, false));
-                cardData.isFoil = saveIndex % CPlayerData.GetCardAmountPerMonsterType(expansionType) >= CPlayerData.GetCardAmountPerMonsterType(expansionType, false);
-                cardData.isDestiny = isDestiny;
-                cardData.expansionType = expansionType;
+                CardData cardData = new()
+                {
+                    monsterType = CPlayerData.GetMonsterTypeFromCardSaveIndex(saveIndex, expansionType),
+                    borderType = (ECardBorderType)(saveIndex % CPlayerData.GetCardAmountPerMonsterType(expansionType, false)),
+                    isFoil = saveIndex % CPlayerData.GetCardAmountPerMonsterType(expansionType) >= CPlayerData.GetCardAmountPerMonsterType(expansionType, false),
+                    isDestiny = isDestiny,
+                    expansionType = expansionType
+                };
                 int cardAmount = CPlayerData.GetCardAmount(cardData);
                 if (cardAmount <= Plugin.AmountToHold.Value)
                 {
@@ -608,7 +421,7 @@ public class MyPatches
                     saveIndex++;
                     continue;
                 }
-                CardEntry cardEntry = new CardEntry(saveIndex, expansionType, marketPrice, isDestiny, cardAmount-Plugin.AmountToHold.Value);
+                CardEntry cardEntry = new(saveIndex, expansionType, marketPrice, isDestiny, cardAmount-Plugin.AmountToHold.Value);
                 for (int n = 0; n < SortedCards.Count; n++)
                 {
                     if (cardEntry.Price > SortedCards[n].Price)
@@ -653,18 +466,6 @@ public class MyPatches
             MoveFloorBoxesToWarehouse();
             _isRunning = false;
         }
-        /* DEBUG CODE 
-        if (Plugin.debugKey.IsDown() && !_isRunning && Plugin.PluginEnabled.Value)
-        {
-            long start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            _isRunning = true;
-            //SortCards(ECardExpansionType.Tetramon);
-            FillCardShelves();
-            long firstSort = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            //SortCards(ECardExpansionType.Destiny);
-            Plugin.Logger.LogInfo("Fill took " + (firstSort - start) + "ms");
-            _isRunning = false;
-        }*/
     }
 
     public readonly struct WarehouseEntryList()
@@ -673,8 +474,8 @@ public class MyPatches
         {
             this.Entries = entries;
         }
-        
-        public readonly List<WarehouseEntry> Entries = new List<WarehouseEntry>();
+
+        public readonly List<WarehouseEntry> Entries = [];
         
         public void AddEntry(int shelfIndex, int compartmentIndex, int amount)
         {
@@ -745,11 +546,6 @@ public class MyPatches
             return this.Amount;
         }
         
-        public bool HasAmount(int amount)
-        {
-            return this.Amount >= amount;
-        }
-        
         public readonly int ShelfIndex = -1;
         public readonly int CompartmentIndex = -1;
         public int Amount = 0;
@@ -772,7 +568,7 @@ public class MyPatches
         public readonly bool Destiny = false;
         public int Amount = 0;
 
-        public int CompareTo(object obj)
+        public readonly int CompareTo(object obj)
         {
             if (obj is not CardEntry other) return 1;
             if (this.Price > other.Price) return -1;
@@ -780,7 +576,8 @@ public class MyPatches
             return 0;
         }
         
-        public override string ToString() => $"(CardIndex:{CardIndex}, ExpansionType:{ExpansionType}, Price:{Price}, Destiny:{Destiny}, Amount:{Amount})";
+        public readonly override string ToString()
+            => $"(CardIndex:{CardIndex}, ExpansionType:{ExpansionType}, Price:{Price}, Destiny:{Destiny}, Amount:{Amount})";
     }
 
     public enum EFillResult

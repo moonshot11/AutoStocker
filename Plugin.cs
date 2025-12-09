@@ -12,7 +12,7 @@ namespace AutoDisplayCards;
 public class Plugin : BaseUnityPlugin
 {
     internal new static ManualLogSource Logger;
-    private readonly Harmony harmony = new Harmony("AutoStocker");
+    private readonly Harmony harmony = new("AutoStocker");
 
     public static ConfigEntry<KeyboardShortcut> FillCardTableKey;
     public static ConfigEntry<KeyboardShortcut> FillItemShelfKey;
@@ -28,7 +28,7 @@ public class Plugin : BaseUnityPlugin
     public static ConfigEntry<bool> RandomCardFill;
     public static ConfigEntry<bool> EnableMultiExpansion;
     public static Dictionary<ECardExpansionType, ConfigEntry<bool>> EnabledExpansions;
-    public static KeyboardShortcut debugKey = new KeyboardShortcut(KeyCode.F9);
+    public static KeyboardShortcut debugKey = new(KeyCode.F9);
     
     private void Awake()
     {
