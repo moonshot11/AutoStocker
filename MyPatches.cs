@@ -327,6 +327,7 @@ public class MyPatches
     {
         CacheWarehouse();
         List<InteractablePackagingBox_Item> floorBoxes = RestockManager.Instance.m_ItemPackagingBoxList;
+        floorBoxes.Sort((x, y) => y.m_ItemCompartment.GetItemCount().CompareTo(x.m_ItemCompartment.GetItemCount()));
         foreach (InteractablePackagingBox_Item box in floorBoxes)
         {
             MoveFloorBoxToWarehouse(box);
@@ -353,8 +354,11 @@ public class MyPatches
                 continue;
             }
             box.SetPhysicsEnabled(false);
+            box.DispenseItem(false, wareComp);
             box.transform.position = wareComp.GetEmptySlotTransform().position;
-            box.DispenseItem(false,wareComp);
+            wareComp.ArrangeBoxItemBasedOnItemCount();
+            wareComp.RefreshItemPosition(false);
+            wareComp.RefreshPriceTagItemPriceText();
             return true;
         }
         return false;
@@ -441,9 +445,9 @@ public class MyPatches
         }
     }
     
-    /*[HarmonyPatch(typeof(CGameManager), "Update")]
-    [HarmonyPrefix]*/
-    public static void CheckForInput()
+    [HarmonyPatch(typeof(CGameManager), "Update")]
+    [HarmonyPrefix]
+    public static void GameManagerUpdatePrefix()
     {
         if (Plugin.FillCardTableKey.Value.IsDown() && !_isRunning && Plugin.PluginEnabled.Value)
         {
