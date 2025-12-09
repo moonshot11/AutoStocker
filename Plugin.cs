@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace AutoDisplayCards;
 
-[BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+[BepInPlugin("tcgcardshop.plugins.baldilocks47.autostocker", "Autostocker", "0.7.0")]
 public class Plugin : BaseUnityPlugin
 {
     internal new static ManualLogSource Logger;
@@ -35,8 +35,8 @@ public class Plugin : BaseUnityPlugin
         // Plugin startup logic
         Logger = base.Logger;
         SetupConfig();
-        this.harmony.PatchAll();
-        Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
+        harmony.PatchAll();
+        Logger.LogInfo("Plugin baldilocks47.autostocker is loaded!");
     }
     
     private void SetupConfig()
